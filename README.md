@@ -17,9 +17,7 @@ First, you will need to prepare a channel in your Discord server to receive thes
 * ***Step 1:*** Download the latest release. It will be a .ZIP file containing everything you need, so extract it and get it ready.
 * ***Step 2:*** Move the "cfg" and "addons" folders in the release into your servers "csgo" folder.
 * ***Step 3:*** Enter csgo/cfg/sourcemod on your server, and edit the `KZTimer-Discord.cfg` configuration file.
-* ***Step 4:*** 
-
-There are only two ConVars in this configuration file. The first for the webhook URL you would like these announcements to be delivered to, and the second is where the plugin retrieves images of maps. You only need to configure the first one - paste the webhook URL you copied when you created your webhook previously, and save the file.
+* ***Step 4:*** There are only two ConVars in this configuration file. The first for the webhook URL you would like these announcements to be delivered to, and the second is where the plugin retrieves images of maps. You only need to configure the first one - paste the webhook URL you copied when you created your webhook previously, and save the file.
 
 ![Plugin Install](https://infra.s-ul.eu/3j2zZOAq)
 
