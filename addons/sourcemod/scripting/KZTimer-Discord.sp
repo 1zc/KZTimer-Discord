@@ -25,15 +25,15 @@ public void OnPluginStart()
 {
     RegAdminCmd("sm_discordTest", Command_DiscordTest, ADMFLAG_ROOT);
 
-    g_dcRecordAnnounceDiscord = CreateConVar("ck_announce_records_discord", "", "Web hook link to announce records to discord.");
-    g_dcUrl_thumb = CreateConVar("ck_discord_url_thumb", "https://d2u7y93d5eagqt.cloudfront.net/mapImages/", "The base url of where the Discord thumb images are stored. Leave blank to disable.");
+    g_dcRecordAnnounceDiscord = CreateConVar("kzt_discord_announce", "", "Web hook link to announce records to discord.");
+    g_dcUrl_thumb = CreateConVar("kzt_discord_thumb", "https://d2u7y93d5eagqt.cloudfront.net/mapImages/", "The base url of where the Discord thumb images are stored. Leave blank to disable.");
 
     AutoExecConfig(true, "KZTimer-Discord");
 }
 
-public KZTimer_TimerStoppedValid(int client, int teleports, int rank, float time)
+public KZTimer_TimerStopped(int client, int teleports, float time, int record)
 {
-	if (rank == 1)
+	if (record == 1)
 	{
 		char timeStr[32];
 		char formattedName[128];
