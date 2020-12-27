@@ -14,11 +14,11 @@ char g_szMapName[128];
 
 public Plugin myinfo =
 {
-    name        =    "KZTimer Discord Webhooks",
-    author        =    "Infra",
-    description    =    "Discord webhook announcements for KZTimer map records.",
-    version        =    "1.0.0",
-	url        =    "https://gflclan.com/profile/45876-infra/" // https://github.com/1zc
+    name		=	"KZTimer Discord Webhooks",
+    author		=	"Infra",
+    description	=	"Discord webhook announcements for KZTimer map records.",
+    version		=	"1.0.1",
+	url			=	"https://github.com/1zc"
 };
 
 public void OnPluginStart()
@@ -33,7 +33,7 @@ public void OnPluginStart()
 
 public KZTimer_TimerStopped(int client, int teleports, float time, int record)
 {
-	if (record == 1)
+	if (record == 1 && !IsFakeClient(client))
 	{
 		char timeStr[32];
 		char formattedName[128];
@@ -42,7 +42,7 @@ public KZTimer_TimerStopped(int client, int teleports, float time, int record)
 		GetClientName(client, g_szSteamName[client], sizeof(g_szSteamName[]));
 		GetCurrentMap(g_szMapName, 128);
 
-		FormatTimeFloat(client, time, 3, timeStr, sizeof(timeStr));
+		FormatTimeFloat(time, 3, timeStr, sizeof(timeStr));
 		Format(formattedName, sizeof(formattedName), g_szSteamName[client]);
 
 		if (teleports > 0)
@@ -146,10 +146,8 @@ public Action Command_DiscordTest(int client, int args)
 	return Plugin_Handled;
 }
 
-void FormatTimeFloat(int client, float time, int type, char[] string, int length)
+void FormatTimeFloat(float time, int type, char[] string, int length)
 {
-	if (!IsValidClient(client))
-		return;
 	char szMilli[16];
 	char szSeconds[16];
 	char szMinutes[16];
@@ -307,11 +305,4 @@ void FormatTimeFloat(int client, float time, int type, char[] string, int length
 		else
 			Format(string, length, "Timeleft: %s:%s", szMinutes,szSeconds);
 	}
-}
-
-public bool IsValidClient(int client)
-{
-    if(client >= 1 && client <= MaxClients && IsValidEntity(client) && IsClientConnected(client) && IsClientInGame(client))
-        return true;
-    return false;
 }
