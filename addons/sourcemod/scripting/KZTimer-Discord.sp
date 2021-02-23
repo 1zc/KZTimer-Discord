@@ -2,6 +2,7 @@
 #include <kztimer>
 #include <colorvariables>
 #include <discord>
+#undef REQUIRE_EXTENSIONS
 #include <ripext>
 #pragma newdecls required
 #pragma semicolon 1
