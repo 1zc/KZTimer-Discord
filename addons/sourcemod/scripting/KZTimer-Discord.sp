@@ -34,7 +34,7 @@ public void OnPluginStart()
 	g_dcRecordAnnounceDiscord = CreateConVar("kzt_discord_announce", "", "Web hook link to announce records to discord.", FCVAR_PROTECTED);
 	g_dcUrl_thumb = CreateConVar("kzt_discord_thumb", "https://d2u7y93d5eagqt.cloudfront.net/mapImages/", "The base url of where the Discord thumb images are stored. Leave blank to disable.");
 	g_dcBotUsername = CreateConVar("kzt_discord_username", "", "Username of the bot");
-	g_dcFooterText = CreateConVar("kzt_discord_footer_test", "KZTimer - Map Records", "The text that appears at the footer of the embeded message.");
+	g_dcFooterText = CreateConVar("kzt_discord_footer_text", "KZTimer - Map Records", "The text that appears at the footer of the embeded message.");
 	g_dcFooterIconUrl = CreateConVar("kzt_discord_footer_icon_url", "https://infra.s-ul.eu/Hird3SHc", "The url to the icon that appears at the footer of the embeded message.");
 	g_dcEmbedPROColor = CreateConVar("kzt_discord_pro_color", "#ff2222", "The color of the embed of PRO records.");
 	g_dcEmbedTPColor = CreateConVar("kzt_discord_tp_color", "#09ff00", "The color of the embed of TP records.");
