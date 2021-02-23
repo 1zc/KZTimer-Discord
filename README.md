@@ -1,7 +1,9 @@
 # KZTimer-Discord
 A simple plugin that provides Discord webhook announcements (map record announcements) for KZTimer servers. 
 
-![An example of what it looks like](https://infra.s-ul.eu/7luhP9Zs.png)
+![An example of what it looks like with the profile picture](https://github.com/Sarrus1/KZTimer-Discord/blob/main/img/WithProfilePic.PNG2?raw=true)
+
+![An example of what it looks like without the profile picture](https://github.com/Sarrus1/KZTimer-Discord/blob/main/img/WithoutProfilePic.PNG?raw=true)
 
 ## Discord Channel Setup:
 
