@@ -12,6 +12,7 @@ ConVar g_dcFooterIconUrl;
 ConVar g_dcEmbedPROColor;
 ConVar g_dcEmbedTPColor;
 ConVar g_dcBotUsername;
+ConVar g_cvHostname;
 
 char g_szMapName[128];
 
@@ -34,10 +35,13 @@ public void OnPluginStart()
 	g_dcRecordAnnounceDiscord = CreateConVar("kzt_discord_announce", "", "Web hook link to announce records to discord.", FCVAR_PROTECTED);
 	g_dcUrl_thumb = CreateConVar("kzt_discord_thumb", "https://d2u7y93d5eagqt.cloudfront.net/mapImages/", "The base url of where the Discord thumb images are stored. Leave blank to disable.");
 	g_dcBotUsername = CreateConVar("kzt_discord_username", "", "Username of the bot");
-	g_dcFooterText = CreateConVar("kzt_discord_footer_text", "KZTimer - Map Records", "The text that appears at the footer of the embeded message.");
+	g_dcFooterText = CreateConVar("kzt_discord_footer_text", "KZTimer - Map Records", "The text that appears at the footer of the embeded message. Leave blank for server hostname.");
 	g_dcFooterIconUrl = CreateConVar("kzt_discord_footer_icon_url", "https://infra.s-ul.eu/Hird3SHc", "The url to the icon that appears at the footer of the embeded message.");
 	g_dcEmbedPROColor = CreateConVar("kzt_discord_pro_color", "#ff2222", "The color of the embed of PRO records.");
 	g_dcEmbedTPColor = CreateConVar("kzt_discord_tp_color", "#09ff00", "The color of the embed of TP records.");
+
+	g_cvHostname = FindConVar("hostname");
+	
 
 	AutoExecConfig(true, "KZTimer-Discord");
 }
@@ -69,15 +73,21 @@ stock void sendDiscordAnnouncement(const char[] szName, char szMapName[128], cha
 		szFooterIconUrl[1024], 
 		szColor[16], 
 		szTPNum[4], 
-		szBotUsername[256];
+		szBotUsername[256],
+		szUrlThumb[1024],
+		szTitleBuffer[512];
 
-	GetConVarString(g_dcRecordAnnounceDiscord, webhook, 1024);
+	GetConVarString(g_dcRecordAnnounceDiscord, webhook, sizeof webhook);
 	if (StrEqual(webhook, ""))
 		return;
 
 	GetConVarString(g_dcFooterText, szFooterText, sizeof szFooterText);
 	GetConVarString(g_dcFooterIconUrl, szFooterIconUrl, sizeof szFooterIconUrl);
 	GetConVarString(g_dcBotUsername, szBotUsername, sizeof szBotUsername);
+	GetConVarString(g_dcUrl_thumb, szUrlThumb, 1024);
+	
+	StrCat(szUrlThumb, sizeof(szUrlThumb), szMapName);
+	StrCat(szUrlThumb, sizeof(szUrlThumb), ".jpg");
 
 	if(teleports > 0)
 		GetConVarString(g_dcEmbedTPColor, szColor, sizeof szColor);
@@ -97,32 +107,28 @@ stock void sendDiscordAnnouncement(const char[] szName, char szMapName[128], cha
 	Format(szTimeDiscord, sizeof(szTimeDiscord), "%s", szTime);
 	Embed.SetColor(szColor);
 	if(teleports > 0)
-		Embed.SetTitle("New TP Server Record!");
+		Format( szTitleBuffer, sizeof szTitleBuffer , "__**New Server Record**__ | **%s** - **%s**", szMapName, "TP" );
 	else
-		Embed.SetTitle("New PRO Server Record!");
+		Format( szTitleBuffer, sizeof szTitleBuffer , "__**New Server Record**__ | **%s** - **%s**", szMapName, "PRO" );
+	Embed.SetTitle(szTitleBuffer);
 	
 	Embed.AddField("Player:", szName, true);
-	Embed.AddField("Map:", szMapName, true);
-	Embed.AddField("Record:", szTimeDiscord, false);
+	Embed.AddField("Record:", szTimeDiscord, true);
+
 	if(teleports > 0)
 	{
 		IntToString(teleports, szTPNum, sizeof szTPNum);
-		Embed.AddField("# of TPs:", szTPNum, false);
+		Embed.AddField("# of TPs:", szTPNum, true);
 	}
 
-	if (!StrEqual(szFooterText, ""))
-		Embed.SetFooter(szFooterText);
-	
-	if (!StrEqual(szFooterText, ""))
-		Embed.SetFooter(szFooterText);
+	// If the convar for the footer text is empty, add the server's hostname
+	if (StrEqual(szFooterText, ""))
+		GetConVarString(g_cvHostname, szFooterText, sizeof szFooterText);
+	Embed.SetFooter(szFooterText);
 	
 	if(!StrEqual(szFooterIconUrl, ""))
 		Embed.SetFooterIcon(szFooterIconUrl);
 	
-	char szUrlThumb[1024];
-	GetConVarString(g_dcUrl_thumb, szUrlThumb, 1024);
-	StrCat(szUrlThumb, sizeof(szUrlThumb), szMapName);
-	StrCat(szUrlThumb, sizeof(szUrlThumb), ".jpg");
 	Embed.SetThumb(szUrlThumb);
 
 	//Send the message
