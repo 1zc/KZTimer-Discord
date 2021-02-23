@@ -5,6 +5,7 @@
 
 ConVar g_dcRecordAnnounceDiscord;	
 ConVar g_dcUrl_thumb;
+ConVar g_dcFooterText;
 
 char g_szSteamID[MAXPLAYERS+1][32];
 char g_szSteamName[MAXPLAYERS+1][32];
@@ -27,6 +28,7 @@ public void OnPluginStart()
 
     g_dcRecordAnnounceDiscord = CreateConVar("kzt_discord_announce", "", "Web hook link to announce records to discord.", FCVAR_PROTECTED);
     g_dcUrl_thumb = CreateConVar("kzt_discord_thumb", "https://d2u7y93d5eagqt.cloudfront.net/mapImages/", "The base url of where the Discord thumb images are stored. Leave blank to disable.");
+		g_dcFooterText = CreateConVar("kzt_discord_footer_test", "KZTimer - Map Records", "The text that appears at the footer of the embeded message.");
 
     AutoExecConfig(true, "KZTimer-Discord");
 }
@@ -61,12 +63,13 @@ public KZTimer_TimerStopped(int client, int teleports, float time, int record)
 
 public void sendDiscordPROAnnouncement(char szName[128], char szMapName[128], char szTime[32])
 {
-	char webhook[1024];
+	char webhook[1024], szFooterText[256];
 	GetConVarString(g_dcRecordAnnounceDiscord, webhook, 1024);
 	if (StrEqual(webhook, ""))
 	{
 		return;
 	}
+	GetConVarString(g_dcFooterText, szFooterText, sizeof szFooterText);
 
 	DiscordWebHook hook = new DiscordWebHook(webhook);
 	hook.SlackMode = true;
@@ -81,7 +84,10 @@ public void sendDiscordPROAnnouncement(char szName[128], char szMapName[128], ch
 	Embed.AddField("Player:", szName, true);
 	Embed.AddField("Map:", szMapName, true);
 	Embed.AddField("Record:", szTimeDiscord, false);
-	Embed.SetFooter("KZTimer - Map Records");
+
+	if (!StrEqual(szFooterText, ""))
+		Embed.SetFooter(szFooterText);
+	
 	Embed.SetFooterIcon("https://infra.s-ul.eu/Hird3SHc");
 	
 	char szUrlThumb[1024];
