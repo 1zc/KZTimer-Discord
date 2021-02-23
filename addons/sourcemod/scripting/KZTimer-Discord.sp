@@ -6,6 +6,8 @@
 ConVar g_dcRecordAnnounceDiscord;	
 ConVar g_dcUrl_thumb;
 ConVar g_dcFooterText;
+ConVar g_dcFooterIconUrl;
+ConVar g_dcEmbedPROColor;
 
 char g_szSteamID[MAXPLAYERS+1][32];
 char g_szSteamName[MAXPLAYERS+1][32];
@@ -15,22 +17,24 @@ char g_szMapName[128];
 
 public Plugin myinfo =
 {
-    name		=	"KZTimer Discord Webhooks",
-    author		=	"Infra",
-    description	=	"Discord webhook announcements for KZTimer map records.",
-    version		=	"1.0.1",
+	name		=	"KZTimer Discord Webhooks",
+	author		=	"Infra",
+	description	=	"Discord webhook announcements for KZTimer map records.",
+	version		=	"1.0.1",
 	url			=	"https://github.com/1zc"
 };
 
 public void OnPluginStart()
 {
-    RegAdminCmd("sm_discordTest", Command_DiscordTest, ADMFLAG_ROOT);
+	RegAdminCmd("sm_discordTest", Command_DiscordTest, ADMFLAG_ROOT);
 
-    g_dcRecordAnnounceDiscord = CreateConVar("kzt_discord_announce", "", "Web hook link to announce records to discord.", FCVAR_PROTECTED);
-    g_dcUrl_thumb = CreateConVar("kzt_discord_thumb", "https://d2u7y93d5eagqt.cloudfront.net/mapImages/", "The base url of where the Discord thumb images are stored. Leave blank to disable.");
-		g_dcFooterText = CreateConVar("kzt_discord_footer_test", "KZTimer - Map Records", "The text that appears at the footer of the embeded message.");
-
-    AutoExecConfig(true, "KZTimer-Discord");
+	g_dcRecordAnnounceDiscord = CreateConVar("kzt_discord_announce", "", "Web hook link to announce records to discord.", FCVAR_PROTECTED);
+	g_dcUrl_thumb = CreateConVar("kzt_discord_thumb", "https://d2u7y93d5eagqt.cloudfront.net/mapImages/", "The base url of where the Discord thumb images are stored. Leave blank to disable.");
+	g_dcFooterText = CreateConVar("kzt_discord_footer_test", "KZTimer - Map Records", "The text that appears at the footer of the embeded message.");
+	g_dcFooterIconUrl = CreateConVar("kzt_discord_footer_icon_url", "https://infra.s-ul.eu/Hird3SHc", "The url to the icon that appears at the footer of the embeded message.");
+	g_dcEmbedPROColor = CreateConVar("kzt_discord_pro_color", "#ff2222", "The color of the embed of PRO records.");
+	
+	AutoExecConfig(true, "KZTimer-Discord");
 }
 
 public KZTimer_TimerStopped(int client, int teleports, float time, int record)
@@ -63,13 +67,16 @@ public KZTimer_TimerStopped(int client, int teleports, float time, int record)
 
 public void sendDiscordPROAnnouncement(char szName[128], char szMapName[128], char szTime[32])
 {
-	char webhook[1024], szFooterText[256];
+	char webhook[1024], szFooterText[256], szFooterIconUrl[1024], szColor[16];
 	GetConVarString(g_dcRecordAnnounceDiscord, webhook, 1024);
 	if (StrEqual(webhook, ""))
 	{
 		return;
 	}
+
 	GetConVarString(g_dcFooterText, szFooterText, sizeof szFooterText);
+	GetConVarString(g_dcFooterIconUrl, szFooterIconUrl, sizeof szFooterIconUrl);
+	GetConVarString(g_dcEmbedPROColor, szColor, sizeof szColor);
 
 	DiscordWebHook hook = new DiscordWebHook(webhook);
 	hook.SlackMode = true;
@@ -79,7 +86,7 @@ public void sendDiscordPROAnnouncement(char szName[128], char szMapName[128], ch
 
 	char szTimeDiscord[128];
 	Format(szTimeDiscord, sizeof(szTimeDiscord), "%s", szTime);
-	Embed.SetColor("#ff2222");
+	Embed.SetColor(szColor);
 	Embed.SetTitle("New PRO Server Record!");
 	Embed.AddField("Player:", szName, true);
 	Embed.AddField("Map:", szMapName, true);
@@ -88,7 +95,11 @@ public void sendDiscordPROAnnouncement(char szName[128], char szMapName[128], ch
 	if (!StrEqual(szFooterText, ""))
 		Embed.SetFooter(szFooterText);
 	
-	Embed.SetFooterIcon("https://infra.s-ul.eu/Hird3SHc");
+	if (!StrEqual(szFooterText, ""))
+		Embed.SetFooter(szFooterText);
+	
+	if(!StrEqual(szFooterIconUrl, ""))
+		Embed.SetFooterIcon(szFooterIconUrl);
 	
 	char szUrlThumb[1024];
 	GetConVarString(g_dcUrl_thumb, szUrlThumb, 1024);
