@@ -2,8 +2,11 @@
 #include <kztimer>
 #include <colorvariables>
 #include <discord>
+#include <ripext>
 #pragma newdecls required
 #pragma semicolon 1
+
+HTTPClient httpClient;
 
 ConVar g_dcRecordAnnounceDiscord;	
 ConVar g_dcUrl_thumb;
@@ -13,17 +16,19 @@ ConVar g_dcEmbedPROColor;
 ConVar g_dcEmbedTPColor;
 ConVar g_dcBotUsername;
 ConVar g_cvHostname;
+ConVar g_cvSteamWebAPIKey;
 
-char g_szMapName[128];
+char g_szPictureURL[1024],
+	g_szApiKey[64];
 
 #define PREFIX "\x01[\x03KZT-DISCORD\x01]"
 
 public Plugin myinfo =
 {
 	name		=	"KZTimer Discord Webhooks",
-	author		=	"Infra",
+	author		=	"Infra, improved by Sarrus",
 	description	=	"Discord webhook announcements for KZTimer map records.",
-	version		=	"1.0.1",
+	version		=	"1.1.0",
 	url			=	"https://github.com/1zc"
 };
 
@@ -39,9 +44,10 @@ public void OnPluginStart()
 	g_dcFooterIconUrl = CreateConVar("kzt_discord_footer_icon_url", "https://infra.s-ul.eu/Hird3SHc", "The url to the icon that appears at the footer of the embeded message.");
 	g_dcEmbedPROColor = CreateConVar("kzt_discord_pro_color", "#ff2222", "The color of the embed of PRO records.");
 	g_dcEmbedTPColor = CreateConVar("kzt_discord_tp_color", "#09ff00", "The color of the embed of TP records.");
-
+	g_cvSteamWebAPIKey = CreateConVar("kzt_discord_steam_api_key", "", "Allows the use of the player profile picture, leave blank to disable. The key can be obtained here: https://steamcommunity.com/dev/apikey");
 	g_cvHostname = FindConVar("hostname");
 	
+	GetConVarString(g_cvSteamWebAPIKey, g_szApiKey, sizeof g_szApiKey);
 
 	AutoExecConfig(true, "KZTimer-Discord");
 }
@@ -51,22 +57,14 @@ public void KZTimer_TimerStopped(int client, int teleports, float time, int reco
 {
 	if (record == 1 && IsValidClient(client, true))
 	{
-		char timeStr[32], 
-			formattedName[256], 
-			szSteamID[64];
-
-		GetClientAuthId(client, AuthId_SteamID64, szSteamID, sizeof szSteamID, true);
-		Format( formattedName, sizeof formattedName , "[%N](http://www.steamcommunity.com/profiles/%s)", client, szSteamID );
-		GetCurrentMap(g_szMapName, sizeof g_szMapName);
-		RemoveWorkshop(g_szMapName, sizeof g_szMapName);
-		FormatTimeFloat(time, 3, timeStr, sizeof(timeStr));
-
-		sendDiscordAnnouncement(formattedName, g_szMapName, timeStr, teleports);
+		if(StrEqual(g_szApiKey, ""))
+			sendDiscordAnnouncement(client, time, teleports);
+		else
+			GetProfilePictureURL(client, teleports, time);
 	}
 }
 
-
-stock void sendDiscordAnnouncement(const char[] szName, char szMapName[128], char szTime[32], int teleports = 0)
+stock void sendDiscordAnnouncement(int client, float time, int teleports = 0)
 {
 	char webhook[1024], 
 		szFooterText[256], 
@@ -75,8 +73,20 @@ stock void sendDiscordAnnouncement(const char[] szName, char szMapName[128], cha
 		szTPNum[4], 
 		szBotUsername[256],
 		szUrlThumb[1024],
-		szTitleBuffer[512];
+		szTitleBuffer[512],
+		szName[1024],
+		szSteamID[64],
+		szMapName[128],
+		szTime[32];
+	
+	FormatTimeFloat(time, 3, szTime, sizeof szTime);
 
+	GetCurrentMap(szMapName, sizeof szMapName);
+	RemoveWorkshop(szMapName, sizeof szMapName);
+
+	GetClientAuthId(client, AuthId_SteamID64, szSteamID, sizeof szSteamID, true);
+	Format( szName, sizeof szName , "[%N](http://www.steamcommunity.com/profiles/%s)", client, szSteamID );
+	
 	GetConVarString(g_dcRecordAnnounceDiscord, webhook, sizeof webhook);
 	if (StrEqual(webhook, ""))
 		return;
@@ -99,6 +109,7 @@ stock void sendDiscordAnnouncement(const char[] szName, char szMapName[128], cha
 
 	if(!StrEqual(szBotUsername, ""))
 		hook.SetUsername( szBotUsername );
+	
 	
 	//Create the embed message
 	MessageEmbed Embed = new MessageEmbed();
@@ -129,11 +140,20 @@ stock void sendDiscordAnnouncement(const char[] szName, char szMapName[128], cha
 	if(!StrEqual(szFooterIconUrl, ""))
 		Embed.SetFooterIcon(szFooterIconUrl);
 	
-	Embed.SetThumb(szUrlThumb);
+	if(StrEqual(g_szPictureURL, ""))
+		Embed.SetThumb(szUrlThumb);
+	else
+	{
+		Embed.SetImage(szUrlThumb);
+		Embed.SetThumb(g_szPictureURL);
+	}
+	
+	
 
 	//Send the message
 	hook.Embed(Embed);
 	hook.Send();
+	PrintToServer("Sent");
 	delete hook;
 }
 
@@ -336,4 +356,53 @@ stock void RemoveWorkshop(char[] szMapName, int len)
 	while(szMapName[i] != szCompare[0]);
 	szBuffer[i] = szCompare[0];
 	ReplaceString(szMapName, len, szBuffer, "", true);
+}
+
+
+stock void GetProfilePictureURL(int client, int teleports, float time) 
+{
+	DataPack pack = new DataPack();
+	pack.WriteCell(client);
+	pack.WriteCell(teleports);
+	pack.WriteCell(time);
+	pack.Reset();
+
+	char szRequestBuffer[1024],
+	 szSteamID[64];
+	
+	//GetConVarString(g_cvApiKey, szApiKey, sizeof szApiKey);
+	GetClientAuthId(client, AuthId_SteamID64, szSteamID, sizeof szSteamID, true);
+
+	GetConVarString(g_cvSteamWebAPIKey, g_szApiKey, sizeof g_szApiKey);
+
+	Format(szRequestBuffer, sizeof szRequestBuffer, "ISteamUser/GetPlayerSummaries/v0002/?key=%s&steamids=%s&format=json", g_szApiKey,szSteamID);
+	httpClient = new HTTPClient("https://api.steampowered.com");
+	httpClient.Get(szRequestBuffer, OnResponseReceived, pack);
+}
+
+
+stock void OnResponseReceived(HTTPResponse response, DataPack pack)
+{
+	pack.Reset();
+	int client = pack.ReadCell();
+	int teleports = pack.ReadCell();
+	float time = pack.ReadCell();
+
+	if (response.Status != HTTPStatus_OK) 
+		return;
+	
+	JSONObject objects = view_as<JSONObject>(response.Data);
+	JSONObject Response = view_as<JSONObject>(objects.Get("response"));
+	JSONArray players = view_as<JSONArray>(Response.Get("players"));
+	int playerlen = players.Length;
+	
+	PrintToServer("%d", playerlen);
+	JSONObject player;
+	for (int i = 0; i < playerlen; i++)
+	{
+		player = view_as<JSONObject>(players.Get(i));
+		player.GetString("avatarmedium", g_szPictureURL, sizeof(g_szPictureURL));
+		delete player;
+  }
+	sendDiscordAnnouncement(client, time, teleports);
 }
