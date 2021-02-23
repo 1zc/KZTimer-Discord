@@ -53,8 +53,8 @@ public void KZTimer_TimerStopped(int client, int teleports, float time, int reco
 
 		GetClientAuthId(client, AuthId_SteamID64, szSteamID, sizeof szSteamID, true);
 		Format( formattedName, sizeof formattedName , "[%N](http://www.steamcommunity.com/profiles/%s)", client, szSteamID );
-		GetCurrentMap(g_szMapName, 128);
-
+		GetCurrentMap(g_szMapName, sizeof g_szMapName);
+		RemoveWorkshop(g_szMapName, sizeof g_szMapName);
 		FormatTimeFloat(time, 3, timeStr, sizeof(timeStr));
 
 		sendDiscordAnnouncement(formattedName, g_szMapName, timeStr, teleports);
@@ -134,9 +134,9 @@ stock void sendDiscordAnnouncement(const char[] szName, char szMapName[128], cha
 
 public Action Command_DiscordTest(int client, int args)
 {
-	sendDiscordAnnouncement("Test Player", "kz_lego", "00:42.69");
+	KZTimer_TimerStopped(client, 0, 42.69, 1);
 	CPrintToChat(client, "%s {green}Sent test PRO record to Discord.", PREFIX);
-	sendDiscordAnnouncement("Test Player", "kz_lego", "00:42.69", 69);
+	KZTimer_TimerStopped(client, 69, 42.69, 1);
 	CPrintToChat(client, "%s {green}Sent test TP record to Discord.", PREFIX);
 	return Plugin_Handled;
 }
@@ -310,4 +310,24 @@ stock bool IsValidClient(int client, bool nobots = true)
 		return false; 
 	}
 	return IsClientInGame(client); 
-} 
+}
+
+stock void RemoveWorkshop(char[] szMapName, int len)
+{
+	int i=0;
+	char szBuffer[16], szCompare[1] = "/";
+
+	// Return if "workshop/" is not in the mapname
+	if(ReplaceString(szMapName, len, "workshop/", "", true) != 1)
+		return;
+
+	// Find the index of the last /
+	do
+	{
+		szBuffer[i] = szMapName[i];
+		i++;
+	}
+	while(szMapName[i] != szCompare[0]);
+	szBuffer[i] = szCompare[0];
+	ReplaceString(szMapName, len, szBuffer, "", true);
+}
