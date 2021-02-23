@@ -1,10 +1,10 @@
 #include <sourcemod>
 #include <kztimer>
-#include <multicolors>
+#include <colorvariables>
 #include <discord>
 
-ConVar g_dcRecordAnnounceDiscord = null;	
-ConVar g_dcUrl_thumb = null;
+ConVar g_dcRecordAnnounceDiscord;	
+ConVar g_dcUrl_thumb;
 
 char g_szSteamID[MAXPLAYERS+1][32];
 char g_szSteamName[MAXPLAYERS+1][32];
@@ -25,7 +25,7 @@ public void OnPluginStart()
 {
     RegAdminCmd("sm_discordTest", Command_DiscordTest, ADMFLAG_ROOT);
 
-    g_dcRecordAnnounceDiscord = CreateConVar("kzt_discord_announce", "", "Web hook link to announce records to discord.");
+    g_dcRecordAnnounceDiscord = CreateConVar("kzt_discord_announce", "", "Web hook link to announce records to discord.", FCVAR_PROTECTED);
     g_dcUrl_thumb = CreateConVar("kzt_discord_thumb", "https://d2u7y93d5eagqt.cloudfront.net/mapImages/", "The base url of where the Discord thumb images are stored. Leave blank to disable.");
 
     AutoExecConfig(true, "KZTimer-Discord");
