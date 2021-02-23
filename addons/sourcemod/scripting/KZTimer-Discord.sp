@@ -8,6 +8,7 @@ ConVar g_dcUrl_thumb;
 ConVar g_dcFooterText;
 ConVar g_dcFooterIconUrl;
 ConVar g_dcEmbedPROColor;
+ConVar g_dcEmbedTPColor;
 
 char g_szSteamID[MAXPLAYERS+1][32];
 char g_szSteamName[MAXPLAYERS+1][32];
@@ -24,6 +25,7 @@ public Plugin myinfo =
 	url			=	"https://github.com/1zc"
 };
 
+
 public void OnPluginStart()
 {
 	RegAdminCmd("sm_discordTest", Command_DiscordTest, ADMFLAG_ROOT);
@@ -33,9 +35,11 @@ public void OnPluginStart()
 	g_dcFooterText = CreateConVar("kzt_discord_footer_test", "KZTimer - Map Records", "The text that appears at the footer of the embeded message.");
 	g_dcFooterIconUrl = CreateConVar("kzt_discord_footer_icon_url", "https://infra.s-ul.eu/Hird3SHc", "The url to the icon that appears at the footer of the embeded message.");
 	g_dcEmbedPROColor = CreateConVar("kzt_discord_pro_color", "#ff2222", "The color of the embed of PRO records.");
-	
+	g_dcEmbedTPColor = CreateConVar("kzt_discord_tp_color", "#09ff00", "The color of the embed of TP records.");
+
 	AutoExecConfig(true, "KZTimer-Discord");
 }
+
 
 public KZTimer_TimerStopped(int client, int teleports, float time, int record)
 {
@@ -44,39 +48,33 @@ public KZTimer_TimerStopped(int client, int teleports, float time, int record)
 		char timeStr[32];
 		char formattedName[128];
 
-		GetClientAuthId(client, AuthId_Steam64, g_szSteamID[client], sizeof(g_szSteamID[]), true);
+		GetClientAuthId(client, AuthId_SteamID64, g_szSteamID[client], sizeof(g_szSteamID[]), true);
 		GetClientName(client, g_szSteamName[client], sizeof(g_szSteamName[]));
 		GetCurrentMap(g_szMapName, 128);
 
 		FormatTimeFloat(time, 3, timeStr, sizeof(timeStr));
 		Format(formattedName, sizeof(formattedName), g_szSteamName[client]);
 
-		if (teleports > 0)
-		{
-			// TP TIME
-			sendDiscordTPAnnouncement(formattedName, g_szMapName, timeStr, teleports);
-		}
-
-		else
-		{
-			// PRO TIME
-			sendDiscordPROAnnouncement(formattedName, g_szMapName, timeStr);
-		}
+		sendDiscordAnnouncement(formattedName, g_szMapName, timeStr, teleports);
 	}
 }
 
-public void sendDiscordPROAnnouncement(char szName[128], char szMapName[128], char szTime[32])
+
+stock void sendDiscordAnnouncement(char szName[128], char szMapName[128], char szTime[32], int teleports = 0)
 {
-	char webhook[1024], szFooterText[256], szFooterIconUrl[1024], szColor[16];
+	char webhook[1024], szFooterText[256], szFooterIconUrl[1024], szColor[16], szTPNum[4];
+
 	GetConVarString(g_dcRecordAnnounceDiscord, webhook, 1024);
 	if (StrEqual(webhook, ""))
-	{
 		return;
-	}
 
 	GetConVarString(g_dcFooterText, szFooterText, sizeof szFooterText);
 	GetConVarString(g_dcFooterIconUrl, szFooterIconUrl, sizeof szFooterIconUrl);
-	GetConVarString(g_dcEmbedPROColor, szColor, sizeof szColor);
+
+	if(teleports > 0)
+		GetConVarString(g_dcEmbedTPColor, szColor, sizeof szColor);
+	else
+		GetConVarString(g_dcEmbedPROColor, szColor, sizeof szColor);
 
 	DiscordWebHook hook = new DiscordWebHook(webhook);
 	hook.SlackMode = true;
@@ -87,10 +85,19 @@ public void sendDiscordPROAnnouncement(char szName[128], char szMapName[128], ch
 	char szTimeDiscord[128];
 	Format(szTimeDiscord, sizeof(szTimeDiscord), "%s", szTime);
 	Embed.SetColor(szColor);
-	Embed.SetTitle("New PRO Server Record!");
+	if(teleports > 0)
+		Embed.SetTitle("New TP Server Record!");
+	else
+		Embed.SetTitle("New PRO Server Record!");
+	
 	Embed.AddField("Player:", szName, true);
 	Embed.AddField("Map:", szMapName, true);
 	Embed.AddField("Record:", szTimeDiscord, false);
+	if(teleports > 0)
+	{
+		IntToString(teleports, szTPNum, sizeof szTPNum);
+		Embed.AddField("# of TPs:", szTPNum, false);
+	}
 
 	if (!StrEqual(szFooterText, ""))
 		Embed.SetFooter(szFooterText);
@@ -113,57 +120,18 @@ public void sendDiscordPROAnnouncement(char szName[128], char szMapName[128], ch
 	delete hook;
 }
 
-public void sendDiscordTPAnnouncement(char szName[128], char szMapName[128], char szTime[32], int szTPNumInt)
-{
-	char webhook[1024];
-	GetConVarString(g_dcRecordAnnounceDiscord, webhook, 1024);
-	if (StrEqual(webhook, ""))
-	{
-		return;
-	}
-
-	DiscordWebHook hook = new DiscordWebHook(webhook);
-	hook.SlackMode = true;
-	
-	//Create the embed message
-	MessageEmbed Embed = new MessageEmbed();
-	
-	char szTPNum[4];
-	IntToString(szTPNumInt, szTPNum, 4);
-
-	char szTimeDiscord[128];
-	Format(szTimeDiscord, sizeof(szTimeDiscord), "%s", szTime);
-	Embed.SetColor("#09ff00");
-	Embed.SetTitle("New TP Server Record!");
-	Embed.AddField("Player:", szName, true);
-	Embed.AddField("Map:", szMapName, true);
-	Embed.AddField("Record:", szTimeDiscord, false);
-	Embed.AddField("# of TPs:", szTPNum, false);
-	Embed.SetFooter("KZTimer - Map Records");
-	Embed.SetFooterIcon("https://infra.s-ul.eu/Hird3SHc");
-	
-	char szUrlThumb[1024];
-	GetConVarString(g_dcUrl_thumb, szUrlThumb, 1024);	
-	StrCat(szUrlThumb, sizeof(szUrlThumb), szMapName);
-	StrCat(szUrlThumb, sizeof(szUrlThumb), ".jpg");
-	Embed.SetThumb(szUrlThumb);	
-
-	//Send the message
-	hook.Embed(Embed);
-	hook.Send();
-	delete hook;
-}
 
 public Action Command_DiscordTest(int client, int args)
 {
-	sendDiscordPROAnnouncement("Test Player", "kz_lego", "00:42.69");
+	sendDiscordAnnouncement("Test Player", "kz_lego", "00:42.69");
 	CPrintToChat(client, "%s {green}Sent test PRO record to Discord.", PREFIX);
-	sendDiscordTPAnnouncement("Test Player", "kz_lego", "00:42.69", 69);
+	sendDiscordAnnouncement("Test Player", "kz_lego", "00:42.69", 69);
 	CPrintToChat(client, "%s {green}Sent test TP record to Discord.", PREFIX);
 	return Plugin_Handled;
 }
 
-void FormatTimeFloat(float time, int type, char[] string, int length)
+
+stock void FormatTimeFloat(float time, int type, char[] string, int length)
 {
 	char szMilli[16];
 	char szSeconds[16];
