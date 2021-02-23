@@ -13,8 +13,6 @@ ConVar g_dcEmbedPROColor;
 ConVar g_dcEmbedTPColor;
 ConVar g_dcBotUsername;
 
-char g_szSteamID[MAXPLAYERS+1][32];
-char g_szSteamName[MAXPLAYERS+1][32];
 char g_szMapName[128];
 
 #define PREFIX "\x01[\x03KZT-DISCORD\x01]"
@@ -49,21 +47,22 @@ public void KZTimer_TimerStopped(int client, int teleports, float time, int reco
 {
 	if (record == 1 && IsValidClient(client, true))
 	{
-		char timeStr[32], formattedName[128];
+		char timeStr[32], 
+			formattedName[256], 
+			szSteamID[64];
 
-		GetClientAuthId(client, AuthId_SteamID64, g_szSteamID[client], sizeof(g_szSteamID[]), true);
-		GetClientName(client, g_szSteamName[client], sizeof(g_szSteamName[]));
+		GetClientAuthId(client, AuthId_SteamID64, szSteamID, sizeof szSteamID, true);
+		Format( formattedName, sizeof formattedName , "[%N](http://www.steamcommunity.com/profiles/%s)", client, szSteamID );
 		GetCurrentMap(g_szMapName, 128);
 
 		FormatTimeFloat(time, 3, timeStr, sizeof(timeStr));
-		Format(formattedName, sizeof(formattedName), g_szSteamName[client]);
 
 		sendDiscordAnnouncement(formattedName, g_szMapName, timeStr, teleports);
 	}
 }
 
 
-stock void sendDiscordAnnouncement(char szName[128], char szMapName[128], char szTime[32], int teleports = 0)
+stock void sendDiscordAnnouncement(const char[] szName, char szMapName[128], char szTime[32], int teleports = 0)
 {
 	char webhook[1024], 
 		szFooterText[256], 
