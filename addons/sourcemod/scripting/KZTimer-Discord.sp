@@ -2,6 +2,8 @@
 #include <kztimer>
 #include <colorvariables>
 #include <discord>
+#pragma newdecls required
+#pragma semicolon 1
 
 ConVar g_dcRecordAnnounceDiscord;	
 ConVar g_dcUrl_thumb;
@@ -9,6 +11,7 @@ ConVar g_dcFooterText;
 ConVar g_dcFooterIconUrl;
 ConVar g_dcEmbedPROColor;
 ConVar g_dcEmbedTPColor;
+ConVar g_dcBotUsername;
 
 char g_szSteamID[MAXPLAYERS+1][32];
 char g_szSteamName[MAXPLAYERS+1][32];
@@ -32,6 +35,7 @@ public void OnPluginStart()
 
 	g_dcRecordAnnounceDiscord = CreateConVar("kzt_discord_announce", "", "Web hook link to announce records to discord.", FCVAR_PROTECTED);
 	g_dcUrl_thumb = CreateConVar("kzt_discord_thumb", "https://d2u7y93d5eagqt.cloudfront.net/mapImages/", "The base url of where the Discord thumb images are stored. Leave blank to disable.");
+	g_dcBotUsername = CreateConVar("kzt_discord_username", "", "Username of the bot");
 	g_dcFooterText = CreateConVar("kzt_discord_footer_test", "KZTimer - Map Records", "The text that appears at the footer of the embeded message.");
 	g_dcFooterIconUrl = CreateConVar("kzt_discord_footer_icon_url", "https://infra.s-ul.eu/Hird3SHc", "The url to the icon that appears at the footer of the embeded message.");
 	g_dcEmbedPROColor = CreateConVar("kzt_discord_pro_color", "#ff2222", "The color of the embed of PRO records.");
@@ -41,12 +45,11 @@ public void OnPluginStart()
 }
 
 
-public KZTimer_TimerStopped(int client, int teleports, float time, int record)
+public void KZTimer_TimerStopped(int client, int teleports, float time, int record)
 {
-	if (record == 1 && !IsFakeClient(client))
+	if (record == 1 && IsValidClient(client, true))
 	{
-		char timeStr[32];
-		char formattedName[128];
+		char timeStr[32], formattedName[128];
 
 		GetClientAuthId(client, AuthId_SteamID64, g_szSteamID[client], sizeof(g_szSteamID[]), true);
 		GetClientName(client, g_szSteamName[client], sizeof(g_szSteamName[]));
@@ -62,7 +65,12 @@ public KZTimer_TimerStopped(int client, int teleports, float time, int record)
 
 stock void sendDiscordAnnouncement(char szName[128], char szMapName[128], char szTime[32], int teleports = 0)
 {
-	char webhook[1024], szFooterText[256], szFooterIconUrl[1024], szColor[16], szTPNum[4];
+	char webhook[1024], 
+		szFooterText[256], 
+		szFooterIconUrl[1024], 
+		szColor[16], 
+		szTPNum[4], 
+		szBotUsername[256];
 
 	GetConVarString(g_dcRecordAnnounceDiscord, webhook, 1024);
 	if (StrEqual(webhook, ""))
@@ -70,6 +78,7 @@ stock void sendDiscordAnnouncement(char szName[128], char szMapName[128], char s
 
 	GetConVarString(g_dcFooterText, szFooterText, sizeof szFooterText);
 	GetConVarString(g_dcFooterIconUrl, szFooterIconUrl, sizeof szFooterIconUrl);
+	GetConVarString(g_dcBotUsername, szBotUsername, sizeof szBotUsername);
 
 	if(teleports > 0)
 		GetConVarString(g_dcEmbedTPColor, szColor, sizeof szColor);
@@ -78,6 +87,9 @@ stock void sendDiscordAnnouncement(char szName[128], char szMapName[128], char s
 
 	DiscordWebHook hook = new DiscordWebHook(webhook);
 	hook.SlackMode = true;
+
+	if(!StrEqual(szBotUsername, ""))
+		hook.SetUsername( szBotUsername );
 	
 	//Create the embed message
 	MessageEmbed Embed = new MessageEmbed();
@@ -291,3 +303,12 @@ stock void FormatTimeFloat(float time, int type, char[] string, int length)
 			Format(string, length, "Timeleft: %s:%s", szMinutes,szSeconds);
 	}
 }
+
+stock bool IsValidClient(int client, bool nobots = true)
+{ 
+	if (client <= 0 || client > MaxClients || !IsClientConnected(client) || (nobots && IsFakeClient(client)))
+	{
+		return false; 
+	}
+	return IsClientInGame(client); 
+} 
