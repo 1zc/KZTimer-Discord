@@ -38,7 +38,7 @@ public KZTimer_TimerStopped(int client, int teleports, float time, int record)
 		char timeStr[32];
 		char formattedName[128];
 
-		GetClientAuthId(client, AuthId_Steam2, g_szSteamID[client], sizeof(g_szSteamID[]), true);
+		GetClientAuthId(client, AuthId_Steam64, g_szSteamID[client], sizeof(g_szSteamID[]), true);
 		GetClientName(client, g_szSteamName[client], sizeof(g_szSteamName[]));
 		GetCurrentMap(g_szMapName, 128);
 
@@ -140,9 +140,9 @@ public void sendDiscordTPAnnouncement(char szName[128], char szMapName[128], cha
 public Action Command_DiscordTest(int client, int args)
 {
 	sendDiscordPROAnnouncement("Test Player", "kz_lego", "00:42.69");
-	CPrintToChat(client, "%s \x02Sent test PRO record to Discord.", PREFIX);
+	CPrintToChat(client, "%s {green}Sent test PRO record to Discord.", PREFIX);
 	sendDiscordTPAnnouncement("Test Player", "kz_lego", "00:42.69", 69);
-	CPrintToChat(client, "%s \x02Sent test TP record to Discord.", PREFIX);
+	CPrintToChat(client, "%s {green}Sent test TP record to Discord.", PREFIX);
 	return Plugin_Handled;
 }
 
