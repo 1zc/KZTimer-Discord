@@ -29,8 +29,8 @@ public Plugin myinfo =
 	name		=	"KZTimer Discord Webhooks",
 	author		=	"Infra, improved by Sarrus",
 	description	=	"Discord webhook announcements for KZTimer map records.",
-	version		=	"1.1.0",
-	url			=	"https://github.com/1zc"
+	version		=	"1.1.1",
+	url			=	"https://github.com/Sarrus1"
 };
 
 
@@ -397,7 +397,6 @@ stock void OnResponseReceived(HTTPResponse response, DataPack pack)
 	JSONArray players = view_as<JSONArray>(Response.Get("players"));
 	int playerlen = players.Length;
 	
-	PrintToServer("%d", playerlen);
 	JSONObject player;
 	for (int i = 0; i < playerlen; i++)
 	{
