@@ -56,7 +56,7 @@ forward KZTimer_TimerStarted(client);
  *
  * @noreturn
  */
-forward KZTimer_TimerStopped(client, teleports, Float:time, record);
+forward void KZTimer_TimerStopped(client, teleports, Float:time, record);
 
 /**
  * Called when the timer is stopped.
@@ -70,7 +70,7 @@ forward KZTimer_TimerStopped(client, teleports, Float:time, record);
  *
  * @noreturn
  */
-forward KZTimer_TimerStoppedValid(client, teleports, rank, Float:time);
+forward void KZTimer_TimerStoppedValid(client, teleports, rank, Float:time);
 
 /**
  * Called when a jump with potential jumpstats starts
